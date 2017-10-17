@@ -1,4 +1,4 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import Updater, Handler, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from telegram import CallbackQuery, InputTextMessageContent
 
 from weather import get_current_weather, get_additional_info
@@ -30,20 +30,33 @@ def caps(bot, update, args):
     bot.send_message(chat_id=update.message.chat_id, text=text_caps)
 
 def weather(bot, update, args):
+    print('weather')
     if len(args) == 0:
         location = 'spbru'
         time = 'now'
     else:
         location = args[0]
         time = args[1]
-    response, icon, location, reply_markup = get_current_weather(location, time)
+    try:
+        response, icon, location, reply_markup = get_current_weather(location, time)
+    except Exception as e:
+        print(e)
     response = ''.join(['Weather for ', location, '\n\n', response])
     bot.send_message(chat_id=update.message.chat_id, text=response)
+    print(reply_markup)
     if reply_markup != None:
         try:
             bot.send_message(chat_id=update.message.chat_id, text="Do you wanna see more?", reply_markup=reply_markup)
         except Exception as e:
             print(e)
+
+def stickers(bot, update):
+    try:
+        sticker_set_name = update['message']['sticker']['set_name'] 
+        print(sticker_set_name)
+        print(bot.get_sticker_set(sticker_set_name))
+    except Exception as e:
+        print(e)
 
 def callback_weather(bot, update):
     query = update.callback_query
@@ -62,10 +75,15 @@ def unknown(bot, update):
 start_handler = CommandHandler('start', start)
 echo_handler = MessageHandler(Filters.text, echo)
 caps_handler = CommandHandler('caps', caps, pass_args=True)
+
+# weather handlers
 weather_handler = CommandHandler('weather', weather, pass_args=True)
 callback_weather_handler = CallbackQueryHandler(callback_weather)
 
-# unknown handler
+# stickers handler
+stickers_handler = MessageHandler(Filters.sticker, stickers)
+
+# unknown command handler
 unknown_handler = MessageHandler(Filters.command, unknown)
 
 # dispatchers
@@ -74,6 +92,7 @@ dispatcher.add_handler(echo_handler)
 dispatcher.add_handler(caps_handler)
 dispatcher.add_handler(weather_handler)
 dispatcher.add_handler(callback_weather_handler)
+dispatcher.add_handler(stickers_handler)
 
 # unknow dispatcher
 dispatcher.add_handler(unknown_handler)

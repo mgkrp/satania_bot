@@ -1,6 +1,8 @@
 import geocoder
 import forecastio
 import datetime
+import pytz
+from timezonefinder import TimezoneFinder
 
 from menu import weather_menu
 
@@ -8,6 +10,7 @@ def get_location(loc):
     geo = geocoder.google(loc)  # get location based on user's argument string using google api
     latitude = geo.latlng[0]
     longtitude = geo.latlng[1]
+    
 
     # get country and city
     return geo.json['address'], latitude, longtitude
@@ -16,9 +19,10 @@ def get_current_weather(loc, time):
 
     location, latitude, longtitude = get_location(loc)
 
+
     # get weather via OpenWeatherMap
     api_key = '74cc62440986d98d97347fef6bb55077'
-    forecast = forecastio.load_forecast(api_key, latitude, longtitude, units='auto')  # request to OWM API
+    forecast = forecastio.load_forecast(api_key, latitude, longtitude, units='si')  # request to OWM API
     
     reply_markup = None
     additional_response = ''
@@ -57,6 +61,13 @@ def get_additional_info(loc, time):
     print('start')
     location, latitude, longtitude = get_location(loc)
 
+    # get timezone offset based on latlon
+
+    tf = TimezoneFinder()
+    timezone_name = tf.timezone_at(lat=latitude, lng=longtitude)
+    timezone = pytz.timezone(timezone_name)
+
+
     # get weather via OpenWeatherMap
 
     api_key = '74cc62440986d98d97347fef6bb55077'
@@ -66,7 +77,7 @@ def get_additional_info(loc, time):
     if time == 'hourly':
         data = forecast.hourly().data
         for hourly_data in data:
-            time = hourly_data.time
+            time = timezone.localize(hourly_data.time)
             summary = hourly_data.summary
             temperature = hourly_data.temperature
             new_response = ''.join([additional_response, str(time), ' ', str(summary), ' Temp: ', str(temperature), '\n'])
@@ -74,7 +85,7 @@ def get_additional_info(loc, time):
     if time == 'daily':
         data = forecast.daily().data
         for daily_data in data: 
-            time = daily_data.time
+            time = timezone.localize(daily_data.time)
             summary = daily_data.summary
             temperature_high = daily_data.apparentTemperatureHigh
             temperature_low = daily_data.apparentTemperatureLow
