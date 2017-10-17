@@ -5,6 +5,8 @@ from weather import get_current_weather, get_additional_info
 
 import uuid
 import json
+import os
+import stat
 
 updater = Updater(token='447516508:AAF6YtND_qQAGsKu4jTpJFSWfkgk18vEtww')
 dispatcher = updater.dispatcher
@@ -30,7 +32,6 @@ def caps(bot, update, args):
     bot.send_message(chat_id=update.message.chat_id, text=text_caps)
 
 def weather(bot, update, args):
-    print('weather')
     if len(args) == 0:
         location = 'spbru'
         time = 'now'
@@ -43,7 +44,6 @@ def weather(bot, update, args):
         print(e)
     response = ''.join(['Weather for ', location, '\n\n', response])
     bot.send_message(chat_id=update.message.chat_id, text=response)
-    print(reply_markup)
     if reply_markup != None:
         try:
             bot.send_message(chat_id=update.message.chat_id, text="Do you wanna see more?", reply_markup=reply_markup)
@@ -53,17 +53,22 @@ def weather(bot, update, args):
 def stickers(bot, update):
     try:
         sticker_set_name = update['message']['sticker']['set_name'] 
-        print(sticker_set_name)
-        print(bot.get_sticker_set(sticker_set_name))
+        sticker_set = bot.get_sticker_set(sticker_set_name)
+        for sticker in sticker_set['stickers']:
+            file_id = sticker['file_id']
+            file = bot.get_file(file_id)
+            path = os.getcwd()
+            print(stat.S_IMODE(os.stat(path+'\\media').st_mode))
+            os.chmod(path+'\\media', 0o777)            
+            print(stat.S_IMODE(os.stat(path+'\\media').st_mode))
+            file.download(custom_path=path+'\\media')
     except Exception as e:
         print(e)
 
 def callback_weather(bot, update):
     query = update.callback_query
     data = json.loads(query.data)
-    print(data)
     response = get_additional_info(loc=data['loc'], time=data['time'])
-    print(response)
     bot.edit_message_text(text=response,
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id)
