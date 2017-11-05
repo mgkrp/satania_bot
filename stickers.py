@@ -1,5 +1,6 @@
 import os
 import zipfile
+from PIL import Image
 
 def download_sticker(bot, sticker):
     file_id = sticker.file_id
@@ -23,14 +24,21 @@ def archive_stickers(bot, update):
         bot.send_document(chat_id=update.message.chat_id, document=open('{}.zip'.format(sticker_set_title), 'rb'))
         os.remove('{}.zip'.format(sticker_set_title))
     except Exception as e:
+        print('archive_sticker ')
         print(e)
 
 def add_sticker(bot, update, name):
-    bot.add_sticker_to_set(name=name, png_sticker=update.message.sticker.file_id, emojis=update.message.sticker.emojis)
-
-def create_sticker_set(bot, update, name):
     try:
-        bot.createNewStickerSet(user_id=update.message.chat.id, name=name[0]+'_by_satania_bot', title=name)
-        return name[0]+'_by_satania_bot'
+        download_sticker(bot, update.message.sticker)
+        path = os.getcwd()
+        for file in os.listdir(path):
+            if file.startswith('file'):
+                im = Image.open(file).convert('RGB')
+                im.save('sticker.png')
+                bot.addStickerToSet(name=name, png_sticker='sticker.png', emojis=update.message.sticker.emoji)
+                os.remove(file)
+                os.remove('sticker.png')
     except Exception as e:
+        print('add_sticker ')
         print(e)
+
